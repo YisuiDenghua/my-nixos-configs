@@ -1,0 +1,119 @@
+{
+  description = "NixOS Flake";
+  inputs = {
+    # nixpkgs-qemu.url = "github:zhaofengli/nixpkgs/binfmt-qemu-static";
+    # nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable-small";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # nixpkgs.url = "github:NixOS/nixpkgs/a115bb9bd56831941be3776c8a94005867f316a7";
+    # nixpkgs.url = "github:NixOS/nixpkgs/987cce570afab75ccd6f169b26675b79e3d781f7";
+    # nixpkgs.url = "tarball+file:///home/nixos/Downloads/nixexprs.tar.xz";
+    nixos-cn = {
+      url = "github:nixos-cn/flakes";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    nur.url = "github:nix-community/NUR";
+    hyprland = {
+      url = "github:hyprwm/Hyprland";
+      # build with your own instance of nixpkgs
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    waybar = {
+      url = "github:Alexays/Waybar";
+      flake = false;
+    };
+    
+    
+
+  };
+
+  outputs = { self, nixpkgs, nixos-cn, nur, hyprland, home-manager, waybar, ... }:
+    let system = "x86_64-linux";
+    pkgs = nixpkgs.legacyPackages.${system};
+    in {
+      nixosConfigurations."legion-y9000x" = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [
+
+          ./configuration.nix
+	  nur.nixosModules.nur
+          hyprland.nixosModules.default
+          # dde-nixos.nixosModules.${system}
+        
+          # { home-manager.users.yisui.home.stateVersion = "22.05"; }
+          # home-manager.nixosModules.home-manager
+          # { wayland.windowManager.hyprland.enable = true; }
+          { 
+            programs.hyprland = { 
+              enable = true;
+              xwayland = {
+                enable = true;
+                hidpi = true;
+              };
+            }; 
+          }
+          # { services.xserver.desktopManager.deepin.enable = true; }
+   
+          ({ ... }: {
+            environment.systemPackages =
+              [
+              
+              ];
+            nix.settings.substituters = [
+              "https://mirror.sjtu.edu.cn/nix-channels/store"
+              "https://nixos-cn.cachix.org"
+              "https://hyprland.cachix.org"
+              "https://cache.garnix.io"
+            ];
+            nix.settings.trusted-public-keys = [
+	      "nixos-cn.cachix.org-1:L0jEaL6w7kwQOPlLoCR3ADx+E3Q8SEFEcB9Jaibl0Xg="
+              "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+              "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
+	    ];
+
+            imports = [
+              nixos-cn.nixosModules.nixos-cn-registries
+              nixos-cn.nixosModules.nixos-cn
+            ];
+          })
+          ({ config, ... }: {
+            environment.systemPackages = [
+	      # config.nur.repos.xddxdd.qqmusic
+              # config.nur.repos.xddxdd.fcitx5-breeze
+	      # config.nur.repos.linyinfeng.wemeet
+              # config.nur.repos.linyinfeng.clash-premium
+              # config.nur.repos.YisuiMilena.hmcl-bin
+              # config.nur.repos.linyinfeng.icalingua-plus-plus
+              # config.nur.repos.rewine.v2raya
+              # config.nur.repos.linyinfeng.clash-for-windows
+            ];
+          })
+	  ({ config, ... }: {
+	    environment.systemPackages = [
+	      # old.legacyPackages.${system}.krita
+	      # old.legacyPackages.${system}.v2ray
+	    ];
+	  })
+        ];
+      };
+      homeConfigurations."yisui@legion-y9000x"= home-manager.lib.homeManagerConfiguration {
+
+        inherit pkgs;
+        modules = [
+          ./home/yisui/home.nix
+          ./home/yisui/rofi.nix
+          ./home/yisui/waybar
+          ./home/yisui/foot.nix
+          ./home/yisui/hyprland
+          ./home/yisui/helix.nix
+          ./home/yisui/kitty.nix
+          
+          # { wayland.windowManager.hyprland.enable = true; }
+          hyprland.homeManagerModules.default
+        ];
+      };
+    };
+}
